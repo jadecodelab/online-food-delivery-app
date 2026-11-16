@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Local secrets (DB password) - never commit; use .env.example instead
+.env
+
+# Logs
+npm-debug.log*
+*.log
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
