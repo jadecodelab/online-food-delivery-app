@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Food Delivery - Connection Test</title>
+  <!-- TEMPORARY page for M5: replaced by the real home page in M6 -->
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; color: #222; }
+    .ok  { color: #1a7f37; }
+    .err { color: #b00020; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f3f3f3; }
+  </style>
+</head>
+<body>
+  <h1>Online Food Delivery System</h1>
+  <p id="status">Checking connection…</p>
+  <table id="counts" hidden>
+    <thead><tr><th>Table</th><th>Rows</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    fetch('/api/health')
+      .then(res => res.json().then(data => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        const status = document.getElementById('status');
+        if (!ok) throw new Error(data.error || 'Unknown error');
+        status.className = 'ok';
+        status.textContent = `✅ Connected to MySQL ${data.mysqlVersion} — database "${data.database}"`;
+        const tbody = document.querySelector('#counts tbody');
+        data.tables.forEach(t => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${t.tableName}</td><td>${t.rowCount}</td>`;
+          tbody.appendChild(tr);
+        });
+        document.getElementById('counts').hidden = false;
+      })
+      .catch(err => {
+        const status = document.getElementById('status');
+        status.className = 'err';
+        status.textContent = '❌ ' + err.message;
+      });
+  </script>
+</body>
+</html>
