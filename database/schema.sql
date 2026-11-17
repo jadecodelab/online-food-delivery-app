@@ -100,7 +100,7 @@ CREATE TABLE ORDERS (
         ON DELETE RESTRICT
 );
 
--- Associative (bridge) table resolving ORDERS N:N MENU_ITEM
+-- Associative (bridge) table resolving ORDERS M:N MENU_ITEM
 CREATE TABLE ORDER_ITEM (
     OrderID           INT          NOT NULL,
     ItemID            INT          NOT NULL,

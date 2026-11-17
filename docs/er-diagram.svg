@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ER Diagram (Chen notation) - Online Food Delivery System, Team 12
+  Source file for the report. Edit this file, then re-export docs/er-diagram.png.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="940" viewBox="0 0 1300 940"
+     font-family="Arial, Helvetica, sans-serif">
+
+  <style>
+    .ln   { stroke: #333; stroke-width: 1.5; fill: none; }
+    .ent  { fill: #ffffff; stroke: #222; stroke-width: 2; }
+    .rel  { fill: #fff8e6; stroke: #222; stroke-width: 2; }
+    .att  { fill: #ffffff; stroke: #555; stroke-width: 1.5; }
+    .etxt { font-size: 17px; font-weight: bold; fill: #111; text-anchor: middle; dominant-baseline: central; }
+    .rtxt { font-size: 13px; fill: #111; text-anchor: middle; dominant-baseline: central; }
+    .atxt { font-size: 13px; fill: #222; text-anchor: middle; dominant-baseline: central; }
+    .key  { text-decoration: underline; font-weight: bold; }
+    .card { font-size: 16px; font-weight: bold; fill: #b00020; }
+    .lgd  { font-size: 12px; fill: #222; dominant-baseline: central; }
+  </style>
+
+  <rect width="1300" height="940" fill="#ffffff"/>
+  <text x="20" y="32" font-size="20" font-weight="bold" fill="#111">Online Food Delivery System — ER Diagram</text>
+
+  <!-- ================= ATTRIBUTE CONNECTORS (drawn first, shapes cover ends) ================= -->
+  <g class="ln">
+    <!-- Customer (200,380) -->
+    <line x1="200" y1="380" x2="80"  y2="270"/>
+    <line x1="200" y1="380" x2="200" y2="250"/>
+    <line x1="200" y1="380" x2="320" y2="270"/>
+    <line x1="200" y1="380" x2="80"  y2="490"/>
+    <line x1="200" y1="380" x2="200" y2="510"/>
+    <line x1="200" y1="380" x2="320" y2="490"/>
+    <!-- OrderStatus (620,110) -->
+    <line x1="620" y1="110" x2="470" y2="110"/>
+    <line x1="620" y1="110" x2="780" y2="110"/>
+    <!-- Order (620,380) -->
+    <line x1="620" y1="380" x2="490" y2="300"/>
+    <line x1="620" y1="380" x2="760" y2="300"/>
+    <line x1="620" y1="380" x2="770" y2="470"/>
+    <!-- OrderItem (1080,380) -->
+    <line x1="1080" y1="380" x2="1000" y2="280"/>
+    <line x1="1080" y1="380" x2="1180" y2="280"/>
+    <!-- Restaurant (620,720) -->
+    <line x1="620" y1="720" x2="420" y2="690"/>
+    <line x1="620" y1="720" x2="420" y2="780"/>
+    <line x1="620" y1="720" x2="470" y2="860"/>
+    <line x1="620" y1="720" x2="620" y2="870"/>
+    <line x1="620" y1="720" x2="770" y2="860"/>
+    <!-- MenuItem (1080,720) -->
+    <line x1="1080" y1="720" x2="1230" y2="650"/>
+    <line x1="1080" y1="720" x2="1215" y2="770"/>
+    <line x1="1080" y1="720" x2="910"  y2="870"/>
+    <line x1="1080" y1="720" x2="1030" y2="885"/>
+    <line x1="1080" y1="720" x2="1160" y2="880"/>
+  </g>
+
+  <!-- ================= RELATIONSHIP LINES (double = total participation) ================= -->
+  <g class="ln">
+    <!-- Customer —Places— Order : Customer partial, Order total -->
+    <line x1="270" y1="380" x2="355" y2="380"/>
+    <line x1="465" y1="377.5" x2="550" y2="377.5"/><line x1="465" y1="382.5" x2="550" y2="382.5"/>
+
+    <!-- Order —Contains— OrderItem : both total -->
+    <line x1="690" y1="377.5" x2="795" y2="377.5"/><line x1="690" y1="382.5" x2="795" y2="382.5"/>
+    <line x1="905" y1="377.5" x2="1010" y2="377.5"/><line x1="905" y1="382.5" x2="1010" y2="382.5"/>
+
+    <!-- OrderStatus —Describes— Order : status partial, Order total -->
+    <line x1="620" y1="135" x2="620" y2="210"/>
+    <line x1="617.5" y1="280" x2="617.5" y2="355"/><line x1="622.5" y1="280" x2="622.5" y2="355"/>
+
+    <!-- Order —Receives— Restaurant : Order total, Restaurant partial -->
+    <line x1="617.5" y1="405" x2="617.5" y2="515"/><line x1="622.5" y1="405" x2="622.5" y2="515"/>
+    <line x1="620" y1="585" x2="620" y2="695"/>
+
+    <!-- Restaurant —Offers— MenuItem : both total (each restaurant offers >= 1 item) -->
+    <line x1="690" y1="717.5" x2="795" y2="717.5"/><line x1="690" y1="722.5" x2="795" y2="722.5"/>
+    <line x1="905" y1="717.5" x2="1010" y2="717.5"/><line x1="905" y1="722.5" x2="1010" y2="722.5"/>
+
+    <!-- OrderItem —Refers to— MenuItem : OrderItem total, MenuItem partial -->
+    <line x1="1077.5" y1="405" x2="1077.5" y2="515"/><line x1="1082.5" y1="405" x2="1082.5" y2="515"/>
+    <line x1="1080" y1="585" x2="1080" y2="695"/>
+  </g>
+
+  <!-- ================= ENTITIES ================= -->
+  <rect class="ent" x="130" y="355" width="140" height="50"/>
+  <text class="etxt" x="200" y="380">Customer</text>
+
+  <rect class="ent" x="550" y="85" width="140" height="50"/>
+  <text class="etxt" x="620" y="110">OrderStatus</text>
+
+  <rect class="ent" x="550" y="355" width="140" height="50"/>
+  <text class="etxt" x="620" y="380">Order</text>
+
+  <!-- OrderItem: weak / associative entity (double rectangle) -->
+  <rect class="ent" x="1010" y="355" width="140" height="50"/>
+  <rect class="ent" x="1015" y="360" width="130" height="40"/>
+  <text class="etxt" x="1080" y="380">OrderItem</text>
+
+  <rect class="ent" x="550" y="695" width="140" height="50"/>
+  <text class="etxt" x="620" y="720">Restaurant</text>
+
+  <rect class="ent" x="1010" y="695" width="140" height="50"/>
+  <text class="etxt" x="1080" y="720">MenuItem</text>
+
+  <!-- ================= RELATIONSHIPS ================= -->
+  <polygon class="rel" points="410,345 465,380 410,415 355,380"/>
+  <text class="rtxt" x="410" y="380">Places</text>
+
+  <polygon class="rel" points="620,210 675,245 620,280 565,245"/>
+  <text class="rtxt" x="620" y="245">Describes</text>
+
+  <polygon class="rel" points="620,515 675,550 620,585 565,550"/>
+  <text class="rtxt" x="620" y="550">Receives</text>
+
+  <polygon class="rel" points="850,685 905,720 850,755 795,720"/>
+  <text class="rtxt" x="850" y="720">Offers</text>
+
+  <!-- Identifying relationships for OrderItem (double diamonds) -->
+  <polygon class="rel" points="850,345 905,380 850,415 795,380"/>
+  <polygon class="rel" points="850,351 897,380 850,409 803,380"/>
+  <text class="rtxt" x="850" y="380">Contains</text>
+
+  <polygon class="rel" points="1080,515 1135,550 1080,585 1025,550"/>
+  <polygon class="rel" points="1080,521 1127,550 1080,579 1033,550"/>
+  <text class="rtxt" x="1080" y="550">Refers to</text>
+
+  <!-- ================= CARDINALITIES ================= -->
+  <text class="card" x="284" y="370">1</text>
+  <text class="card" x="530" y="370">N</text>
+
+  <text class="card" x="702" y="370">1</text>
+  <text class="card" x="988" y="370">N</text>
+
+  <text class="card" x="630" y="155">1</text>
+  <text class="card" x="630" y="345">N</text>
+
+  <text class="card" x="630" y="425">N</text>
+  <text class="card" x="630" y="688">1</text>
+
+  <text class="card" x="702" y="710">1</text>
+  <text class="card" x="988" y="710">N</text>
+
+  <text class="card" x="1090" y="425">N</text>
+  <text class="card" x="1090" y="688">1</text>
+
+  <!-- ================= ATTRIBUTES ================= -->
+  <!-- Customer -->
+  <ellipse class="att" cx="80"  cy="270" rx="60" ry="20"/><text class="atxt key" x="80"  y="270">CustomerID</text>
+  <ellipse class="att" cx="200" cy="250" rx="54" ry="20"/><text class="atxt" x="200" y="250">FirstName</text>
+  <ellipse class="att" cx="320" cy="270" rx="52" ry="20"/><text class="atxt" x="320" y="270">LastName</text>
+  <ellipse class="att" cx="80"  cy="490" rx="62" ry="20"/><text class="atxt" x="80"  y="490">PhoneNumber</text>
+  <ellipse class="att" cx="200" cy="510" rx="50" ry="20"/><text class="atxt" x="200" y="510">Email</text>
+  <ellipse class="att" cx="320" cy="490" rx="50" ry="20"/><text class="atxt" x="320" y="490">Address</text>
+
+  <!-- OrderStatus -->
+  <ellipse class="att" cx="470" cy="110" rx="52" ry="20"/><text class="atxt key" x="470" y="110">StatusID</text>
+  <ellipse class="att" cx="780" cy="110" rx="60" ry="20"/><text class="atxt" x="780" y="110">StatusName</text>
+
+  <!-- Order -->
+  <ellipse class="att" cx="490" cy="300" rx="50" ry="20"/><text class="atxt key" x="490" y="300">OrderID</text>
+  <ellipse class="att" cx="760" cy="300" rx="54" ry="20"/><text class="atxt" x="760" y="300">OrderDate</text>
+  <ellipse class="att" cx="770" cy="470" rx="78" ry="20"/><text class="atxt" x="770" y="470">DeliveryAddress</text>
+
+  <!-- OrderItem -->
+  <ellipse class="att" cx="1000" cy="280" rx="50" ry="20"/><text class="atxt" x="1000" y="280">Quantity</text>
+  <ellipse class="att" cx="1180" cy="280" rx="82" ry="20"/><text class="atxt" x="1180" y="280">PriceAtOrderTime</text>
+
+  <!-- Restaurant -->
+  <ellipse class="att" cx="420" cy="690" rx="66" ry="20"/><text class="atxt key" x="420" y="690">RestaurantID</text>
+  <ellipse class="att" cx="420" cy="780" rx="54" ry="20"/><text class="atxt" x="420" y="780">OpenHours</text>
+  <ellipse class="att" cx="470" cy="860" rx="75" ry="20"/><text class="atxt" x="470" y="860">RestaurantName</text>
+  <ellipse class="att" cx="620" cy="870" rx="50" ry="20"/><text class="atxt" x="620" y="870">Address</text>
+  <ellipse class="att" cx="770" cy="860" rx="62" ry="20"/><text class="atxt" x="770" y="860">PhoneNumber</text>
+
+  <!-- MenuItem -->
+  <ellipse class="att" cx="1230" cy="650" rx="50" ry="20"/><text class="atxt" x="1230" y="650">Price</text>
+  <ellipse class="att" cx="1215" cy="770" rx="78" ry="20"/><text class="atxt" x="1215" y="770">AvailabilityStatus</text>
+  <ellipse class="att" cx="910"  cy="870" rx="50" ry="20"/><text class="atxt key" x="910" y="870">ItemID</text>
+  <ellipse class="att" cx="1030" cy="885" rx="54" ry="20"/><text class="atxt" x="1030" y="885">ItemName</text>
+  <ellipse class="att" cx="1160" cy="880" rx="62" ry="20"/><text class="atxt" x="1160" y="880">Description</text>
+
+  <!-- ================= LEGEND ================= -->
+  <g transform="translate(20,600)">
+    <rect x="0" y="0" width="320" height="320" fill="#fafafa" stroke="#bbb"/>
+    <text x="12" y="20" font-size="13" font-weight="bold" fill="#111">Legend</text>
+
+    <rect class="ent" x="12" y="38" width="50" height="22"/>
+    <text class="lgd" x="76" y="49">Entity</text>
+
+    <rect class="ent" x="12" y="70" width="50" height="22"/><rect class="ent" x="16" y="74" width="42" height="14"/>
+    <text class="lgd" x="76" y="81">Weak / associative entity</text>
+
+    <polygon class="rel" points="37,102 62,114 37,126 12,114"/>
+    <text class="lgd" x="76" y="114">Relationship</text>
+
+    <polygon class="rel" points="37,136 62,148 37,160 12,148"/><polygon class="rel" points="37,140 55,148 37,156 19,148"/>
+    <text class="lgd" x="76" y="148">Identifying relationship</text>
+
+    <ellipse class="att" cx="37" cy="182" rx="25" ry="11"/>
+    <text class="lgd" x="76" y="182">Attribute</text>
+
+    <text class="lgd key" x="12" y="210">KeyAttr</text>
+    <text class="lgd" x="76" y="210">Primary key attribute (underlined)</text>
+
+    <line class="ln" x1="12" y1="236" x2="62" y2="236"/>
+    <text class="lgd" x="76" y="236">Partial participation</text>
+    <line class="ln" x1="12" y1="257.5" x2="62" y2="257.5"/><line class="ln" x1="12" y1="262.5" x2="62" y2="262.5"/>
+    <text class="lgd" x="76" y="260">Total participation (must take part)</text>
+
+    <text class="card" x="12" y="290">1  N</text>
+    <text class="lgd" x="76" y="286">Cardinality (one / many)</text>
+
+    <text class="lgd" x="12" y="308" fill="#555">OrderItem key = (OrderID, ItemID) from its two owners</text>
+  </g>
+</svg>
