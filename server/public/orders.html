@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Search - Online Food Delivery</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">🍜 Online Food Delivery</a>
+      <nav class="nav" aria-label="Main">
+        <a href="/">Home</a>
+        <a href="/menu.html">Menu</a>
+        <a href="/orders.html">Orders</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>Order Search</h1>
+    <p class="subtitle">Find orders by customer, status, restaurant, and date. Leave a field empty to ignore it.</p>
+
+    <form id="search-form" class="card" novalidate>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label for="customer">Customer</label>
+          <input id="customer" name="customer" type="text" maxlength="100" placeholder="Name or email">
+          <span class="hint">e.g. "Emily", "Chen", or "example.com"</span>
+        </div>
+
+        <div class="field">
+          <label for="statusId">Status</label>
+          <select id="statusId" name="statusId">
+            <option value="">All statuses</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="restaurantId">Restaurant</label>
+          <select id="restaurantId" name="restaurantId">
+            <option value="">All restaurants</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="from">From date</label>
+          <input id="from" name="from" type="date">
+        </div>
+
+        <div class="field">
+          <label for="to">To date</label>
+          <input id="to" name="to" type="date">
+          <span class="hint">Includes the whole day</span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="search-btn">Search</button>
+        <button type="button" class="btn btn-secondary" id="reset-btn">Clear filters</button>
+      </div>
+    </form>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <p id="summary" class="result-summary"></p>
+    <div class="table-wrap">
+      <table class="data" id="results" hidden>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Restaurant</th>
+            <th class="num">Items</th>
+            <th class="num">Total</th>
+            <th>Status</th>
+            <th>Delivery address</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="/main.js"></script>
+  <script src="/orders.js"></script>
+</body>
+</html>

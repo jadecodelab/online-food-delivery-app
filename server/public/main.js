@@ -52,6 +52,24 @@ function formatMoney(amount) {
   return Number(amount).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
 }
 
+/**
+ * Format MySQL 'YYYY-MM-DD HH:MM:SS' as e.g. "Nov 17, 2026, 12:10 PM".
+ * Parsed manually so the browser's time zone does not shift the time.
+ */
+function formatDateTime(text) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(text || '');
+  if (!m) return escapeHtml(text);
+  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]));
+  return date.toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+}
+
+/** CSS class for an order status badge, e.g. "Out for Delivery" -> "status-out-for-delivery". */
+function statusClass(statusName) {
+  return 'status-' + String(statusName).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+}
+
 /** Highlight the navigation link for the current page. */
 function markActiveNav() {
   const current = window.location.pathname === '/' ? '/index.html' : window.location.pathname;

@@ -57,6 +57,22 @@ function optionalBoolean(value, label) {
   throw new ValidationError(`${label} must be true or false.`);
 }
 
+/** Optional calendar date in YYYY-MM-DD format (must be a real date). */
+function optionalDate(value, label) {
+  if (isEmpty(value)) return null;
+  const text = String(value).trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  if (match) {
+    const [, y, m, d] = match.map(Number);
+    const date = new Date(Date.UTC(y, m - 1, d));
+    // Rejects impossible dates such as 2026-02-30
+    if (date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d) {
+      return text;
+    }
+  }
+  throw new ValidationError(`${label} must be a valid date (YYYY-MM-DD).`);
+}
+
 /**
  * Escape LIKE wildcards so user input is matched literally.
  * Without this, searching for "%" would match every row.
@@ -71,5 +87,6 @@ module.exports = {
   optionalId,
   optionalMoney,
   optionalBoolean,
+  optionalDate,
   escapeLike,
 };
