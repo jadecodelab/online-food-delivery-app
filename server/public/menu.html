@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Search - Online Food Delivery</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">🍜 Online Food Delivery</a>
+      <nav class="nav" aria-label="Main">
+        <a href="/">Home</a>
+        <a href="/menu.html">Menu</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>Menu Search</h1>
+    <p class="subtitle">Find menu items across all restaurants. Leave a field empty to ignore it.</p>
+
+    <form id="search-form" class="card" novalidate>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label for="search">Keyword</label>
+          <input id="search" name="search" type="text" maxlength="100" placeholder="e.g. chicken, pizza">
+          <span class="hint">Matches item name or description</span>
+        </div>
+
+        <div class="field">
+          <label for="restaurantId">Restaurant</label>
+          <select id="restaurantId" name="restaurantId">
+            <option value="">All restaurants</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="available">Availability</label>
+          <select id="available" name="available">
+            <option value="">All items</option>
+            <option value="true">Available only</option>
+            <option value="false">Unavailable only</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="minPrice">Min price ($)</label>
+          <input id="minPrice" name="minPrice" type="number" min="0" max="999999.99" step="0.01" inputmode="decimal" placeholder="0.00">
+        </div>
+
+        <div class="field">
+          <label for="maxPrice">Max price ($)</label>
+          <input id="maxPrice" name="maxPrice" type="number" min="0" max="999999.99" step="0.01" inputmode="decimal" placeholder="Any">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="search-btn">Search</button>
+        <button type="button" class="btn btn-secondary" id="reset-btn">Clear filters</button>
+      </div>
+    </form>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <p id="summary" class="result-summary"></p>
+    <div class="table-wrap">
+      <table class="data" id="results" hidden>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Restaurant</th>
+            <th>Description</th>
+            <th class="num">Price</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="/main.js"></script>
+  <script src="/menu.js"></script>
+</body>
+</html>

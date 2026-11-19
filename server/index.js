@@ -32,7 +32,9 @@ app.get('/api/health', async (req, res) => {
   res.json({ status: 'ok', database: info.db, mysqlVersion: info.version, tables: counts });
 });
 
-// (Feature routes will be added here in M6+, e.g. app.use('/api/restaurants', ...))
+// Feature routes
+app.use('/api/restaurants', require('./routes/restaurants'));
+app.use('/api/menu-items', require('./routes/menuItems'));
 
 // Unknown API URL -> 404 JSON (instead of an HTML error page)
 app.use('/api', (req, res) => {
@@ -44,6 +46,10 @@ app.use('/api', (req, res) => {
 // and the browser always receives a JSON message.
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
+  // Invalid user input -> 400 with the validator's message
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({ error: err.message });
+  }
   console.error(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}\n`, err);
   res.status(500).json({ error: 'Something went wrong on the server. Please try again.' });
 });
