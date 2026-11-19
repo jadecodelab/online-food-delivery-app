@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers - Online Food Delivery</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">🍜 Online Food Delivery</a>
+      <nav class="nav" aria-label="Main">
+        <a href="/">Home</a>
+        <a href="/menu.html">Menu</a>
+        <a href="/orders.html">Orders</a>
+        <a href="/customers.html">Customers</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>Customers</h1>
+    <p class="subtitle">Search customers by name, email, or phone number.</p>
+
+    <form id="search-form" class="card" novalidate>
+      <div class="field">
+        <label for="search">Name, email, or phone</label>
+        <input id="search" name="search" type="text" maxlength="100" placeholder="e.g. Lee, example.com, 555-0105">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="search-btn">Search</button>
+        <button type="button" class="btn btn-secondary" id="reset-btn">Show all</button>
+      </div>
+    </form>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <p id="summary" class="result-summary"></p>
+    <div class="table-wrap">
+      <table class="data" id="results" hidden>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Address</th>
+            <th class="num">Orders</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script src="/main.js"></script>
+  <script src="/customers.js"></script>
+</body>
+</html>

@@ -12,6 +12,35 @@ const table     = document.getElementById('results');
 const tbody     = table.querySelector('tbody');
 const fromInput = document.getElementById('from');
 const toInput   = document.getElementById('to');
+const customerIdInput = document.getElementById('customerId');
+const customerNote    = document.getElementById('customer-note');
+
+/**
+ * If we came from the Customers page (orders.html?customerId=5),
+ * keep that customer filter and show a note with a way to remove it.
+ */
+function applyCustomerFromUrl() {
+  const id = new URLSearchParams(window.location.search).get('customerId');
+  if (id && /^\d+$/.test(id)) customerIdInput.value = id;
+}
+
+function updateCustomerNote(orders) {
+  if (!customerIdInput.value) {
+    customerNote.hidden = true;
+    return;
+  }
+  const name = orders.length ? orders[0].CustomerName : `customer #${customerIdInput.value}`;
+  customerNote.innerHTML = `Showing only orders for <strong>${escapeHtml(name)}</strong>. ` +
+    '<button type="button" class="btn btn-secondary" id="clear-customer">Show all orders</button>';
+  customerNote.hidden = false;
+  document.getElementById('clear-customer').addEventListener('click', clearCustomerFilter);
+}
+
+function clearCustomerFilter() {
+  customerIdInput.value = '';
+  history.replaceState(null, '', '/orders.html');   // remove ?customerId= from the address bar
+  runSearch();
+}
 
 /** Add <option>s to a <select> from a list of rows. */
 function fillSelect(select, rows, valueKey, textKey) {
@@ -100,6 +129,7 @@ async function runSearch() {
     const query = buildQuery();
     const orders = await api('/api/orders' + (query ? '?' + query : ''));
     renderResults(orders);
+    updateCustomerNote(orders);
   } catch (err) {
     table.hidden = true;
     summary.textContent = '';
@@ -116,9 +146,10 @@ form.addEventListener('submit', (event) => {
 
 resetBtn.addEventListener('click', () => {
   form.reset();
-  runSearch();
+  clearCustomerFilter();   // also clears the hidden customer filter, then searches
 });
 
+applyCustomerFromUrl();
 loadDropdowns()
   .catch((err) => showMessage(message, 'error', 'Could not load filter options: ' + err.message))
   .finally(runSearch);

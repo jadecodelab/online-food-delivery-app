@@ -90,6 +90,8 @@ input.invalid, select.invalid { border-color: var(--err-text); background: var(-
 .message.success { background: var(--ok-bg);   color: var(--ok-text);   border-color: var(--ok-border); }
 .message.error   { background: var(--err-bg);  color: var(--err-text);  border-color: var(--err-border); }
 .message.info    { background: var(--info-bg); color: var(--info-text); border-color: #c3d7ef; }
+.message[hidden] { display: none; }
+.message .btn    { margin-left: 8px; padding: 4px 12px; font-size: 0.9rem; }
 
 /* ---------- Tables ---------- */
 .result-summary { color: var(--muted); margin: 0 0 8px; }

@@ -37,6 +37,7 @@ app.use('/api/restaurants', require('./routes/restaurants'));
 app.use('/api/menu-items', require('./routes/menuItems'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/order-statuses', require('./routes/orderStatuses'));
+app.use('/api/customers', require('./routes/customers'));
 
 // Unknown API URL -> 404 JSON (instead of an HTML error page)
 app.use('/api', (req, res) => {

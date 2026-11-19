@@ -14,6 +14,7 @@
         <a href="/">Home</a>
         <a href="/menu.html">Menu</a>
         <a href="/orders.html">Orders</a>
+        <a href="/customers.html">Customers</a>
       </nav>
     </div>
   </header>
@@ -22,7 +23,11 @@
     <h1>Order Search</h1>
     <p class="subtitle">Find orders by customer, status, restaurant, and date. Leave a field empty to ignore it.</p>
 
+    <div id="customer-note" class="message info" hidden></div>
+
     <form id="search-form" class="card" novalidate>
+      <!-- Set when arriving from the Customers page via "View orders" -->
+      <input type="hidden" id="customerId" name="customerId">
       <div class="form-grid cols-3">
         <div class="field">
           <label for="customer">Customer</label>
