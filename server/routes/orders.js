@@ -4,8 +4,9 @@
 const express = require('express');
 const dao = require('../DAO');
 const {
-  ValidationError, optionalText, optionalId, optionalDate, escapeLike, validateOrder,
+  ValidationError, NotFoundError, idParam, optionalText, optionalId, optionalDate, escapeLike, validateOrder,
 } = require('../validators');
+const { checkStatusChange, allowedNextStatuses, isFinal } = require('../orderStatusRules');
 
 const router = express.Router();
 
@@ -175,6 +176,124 @@ router.post('/', async (req, res) => {
     throw err;               // index.js turns it into a clear message
   } finally {
     conn.release();          // return the connection to the pool
+  }
+});
+
+/**
+ * GET /api/orders/:id
+ * One order with its items and the statuses it may change to.
+ *  - header: ORDERS + CUSTOMER + RESTAURANT + ORDER_STATUS (+ SUM over ORDER_ITEM)
+ *  - items:  ORDER_ITEM + MENU_ITEM, Subtotal = Quantity * PriceAtOrderTime (computed, not stored)
+ */
+router.get('/:id', async (req, res) => {
+  const orderId = idParam(req.params.id, 'Order ID');
+
+  const [order] = await dao.query(
+    `SELECT o.OrderID, o.OrderDate, o.DeliveryAddress,
+            c.CustomerID, CONCAT(c.FirstName, ' ', c.LastName) AS CustomerName,
+            r.RestaurantID, r.RestaurantName,
+            s.StatusID, s.StatusName,
+            SUM(oi.Quantity)                       AS TotalQuantity,
+            SUM(oi.Quantity * oi.PriceAtOrderTime) AS TotalAmount
+     FROM ORDERS o
+     JOIN CUSTOMER     c  ON c.CustomerID   = o.CustomerID
+     JOIN RESTAURANT   r  ON r.RestaurantID = o.RestaurantID
+     JOIN ORDER_STATUS s  ON s.StatusID     = o.StatusID
+     JOIN ORDER_ITEM   oi ON oi.OrderID     = o.OrderID
+     WHERE o.OrderID = ?
+     GROUP BY o.OrderID, o.OrderDate, o.DeliveryAddress, c.CustomerID, c.FirstName, c.LastName,
+              r.RestaurantID, r.RestaurantName, s.StatusID, s.StatusName`,
+    [orderId]
+  );
+  if (!order) throw new NotFoundError(`Order #${orderId} was not found.`);
+
+  const items = await dao.query(
+    `SELECT oi.ItemID, m.ItemName, oi.Quantity, oi.PriceAtOrderTime,
+            oi.Quantity * oi.PriceAtOrderTime AS Subtotal
+     FROM ORDER_ITEM oi
+     JOIN MENU_ITEM m ON m.ItemID = oi.ItemID
+     WHERE oi.OrderID = ?
+     ORDER BY m.ItemName`,
+    [orderId]
+  );
+
+  const statuses = await dao.query('SELECT StatusID, StatusName FROM ORDER_STATUS ORDER BY StatusID');
+
+  res.json({
+    ...order,
+    items,
+    isFinal: isFinal(order.StatusName),
+    allowedStatuses: allowedNextStatuses(order.StatusName, statuses),
+  });
+});
+
+/**
+ * PATCH /api/orders/:id/status
+ * Body: { statusId }
+ * Change ONE order's status, following the rules in orderStatusRules.js.
+ *
+ * Runs in a transaction and locks the order row (SELECT ... FOR UPDATE), so
+ * two staff members changing the same order at once cannot both succeed
+ * with conflicting changes. WHERE OrderID = ? targets only that order.
+ */
+router.patch('/:id/status', async (req, res) => {
+  const orderId = idParam(req.params.id, 'Order ID');
+  const body = req.body || {};
+  const rawStatus = body.statusId;
+  if (rawStatus === undefined || rawStatus === null || String(rawStatus).trim() === '') {
+    throw new ValidationError('Please choose a new status.', { statusId: 'New status is required.' });
+  }
+  const statusId = optionalId(rawStatus, 'Status');
+
+  const conn = await dao.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Lock this order row until COMMIT/ROLLBACK
+    const [[current]] = await conn.execute(
+      `SELECT o.OrderID, s.StatusName
+       FROM ORDERS o JOIN ORDER_STATUS s ON s.StatusID = o.StatusID
+       WHERE o.OrderID = ?
+       FOR UPDATE`,
+      [orderId]
+    );
+    if (!current) throw new NotFoundError(`Order #${orderId} was not found.`);
+
+    const [[target]] = await conn.execute(
+      'SELECT StatusID, StatusName FROM ORDER_STATUS WHERE StatusID = ?',
+      [statusId]
+    );
+    if (!target) {
+      throw new ValidationError('That status does not exist.', { statusId: 'That status does not exist.' });
+    }
+
+    if (current.StatusName === target.StatusName) {
+      await conn.rollback();
+      return res.json({
+        message: `No changes were made: order #${orderId} is already ${target.StatusName}.`,
+        orderId,
+        changed: false,
+      });
+    }
+
+    const rule = checkStatusChange(current.StatusName, target.StatusName);
+    if (!rule.ok) {
+      throw new ValidationError(rule.reason, { statusId: rule.reason });
+    }
+
+    await conn.execute('UPDATE ORDERS SET StatusID = ? WHERE OrderID = ?', [target.StatusID, orderId]);
+    await conn.commit();
+
+    res.json({
+      message: `Order #${orderId} changed from ${current.StatusName} to ${target.StatusName}.`,
+      orderId,
+      changed: true,
+    });
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
   }
 });
 

@@ -74,6 +74,34 @@
       </div>
     </form>
 
+    <!-- Update order status (hidden until "Update status" is clicked on a row) -->
+    <form id="status-form" class="card form-card" novalidate hidden>
+      <h2 id="status-title">Update order status</h2>
+      <p id="status-summary" class="hint"></p>
+      <div id="status-form-message" class="message" role="alert"></div>
+
+      <div class="table-wrap">
+        <table class="data compact" id="status-items">
+          <thead>
+            <tr><th>Item</th><th class="num">Qty</th><th class="num">Price paid</th><th class="num">Subtotal</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="field" id="status-field">
+        <label for="new-status">New status <span class="req">*</span></label>
+        <select id="new-status" name="statusId" required></select>
+        <span class="hint">Only the changes allowed for the current status are listed.</span>
+        <span class="field-error" data-error-for="statusId"></span>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="status-save-btn">Save status</button>
+        <button type="button" class="btn btn-secondary" id="status-cancel-btn">Cancel</button>
+      </div>
+    </form>
+
     <div id="customer-note" class="message info" hidden></div>
 
     <form id="search-form" class="card" novalidate>
@@ -133,6 +161,7 @@
             <th class="num">Total</th>
             <th>Status</th>
             <th>Delivery address</th>
+            <th><span class="visually-hidden">Actions</span></th>
           </tr>
         </thead>
         <tbody></tbody>

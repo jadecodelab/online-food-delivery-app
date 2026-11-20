@@ -102,6 +102,10 @@ function renderResults(orders, highlightId = null) {
       <td data-label="Total" class="num"><strong>${formatMoney(o.TotalAmount)}</strong></td>
       <td data-label="Status"><span class="badge ${statusClass(o.StatusName)}">${escapeHtml(o.StatusName)}</span></td>
       <td data-label="Delivery address">${escapeHtml(o.DeliveryAddress)}</td>
+      <td data-label="Actions">
+        <button type="button" class="btn btn-secondary btn-small" data-status-id="${o.OrderID}"
+                aria-label="Update status of order ${o.OrderID}">Update status</button>
+      </td>
     </tr>`).join('');
 
   table.hidden = orders.length === 0;
@@ -349,6 +353,111 @@ picker.addEventListener('input', updateEstimate);
 newOrderBtn.addEventListener('click', openOrderForm);
 orderForm.addEventListener('submit', placeOrder);
 orderCancelBtn.addEventListener('click', cancelOrderForm);
+
+// =====================================================================
+// Update order status
+// =====================================================================
+const statusForm        = document.getElementById('status-form');
+const statusTitle       = document.getElementById('status-title');
+const statusSummary     = document.getElementById('status-summary');
+const statusMessage     = document.getElementById('status-form-message');
+const statusItemsBody   = document.querySelector('#status-items tbody');
+const statusField       = document.getElementById('status-field');
+const newStatusSelect   = document.getElementById('new-status');
+const statusSaveBtn     = document.getElementById('status-save-btn');
+const statusCancelBtn   = document.getElementById('status-cancel-btn');
+let statusOrderId = null;
+
+/** Load one order fresh from MySQL and show it with its allowed next statuses. */
+async function openStatusForm(orderId) {
+  try {
+    const order = await api(`/api/orders/${orderId}`);
+    statusOrderId = order.OrderID;
+
+    statusTitle.textContent = `Update status — order #${order.OrderID}`;
+    statusSummary.innerHTML =
+      `${escapeHtml(order.CustomerName)} · ${escapeHtml(order.RestaurantName)} · ${formatDateTime(order.OrderDate)} · ` +
+      `total <strong>${formatMoney(order.TotalAmount)}</strong> · current status ` +
+      `<span class="badge ${statusClass(order.StatusName)}">${escapeHtml(order.StatusName)}</span>`;
+
+    statusItemsBody.innerHTML = order.items.map((item) => `
+      <tr>
+        <td data-label="Item">${escapeHtml(item.ItemName)}</td>
+        <td data-label="Qty" class="num">${item.Quantity}</td>
+        <td data-label="Price paid" class="num">${formatMoney(item.PriceAtOrderTime)}</td>
+        <td data-label="Subtotal" class="num">${formatMoney(item.Subtotal)}</td>
+      </tr>`).join('');
+
+    showFieldErrors(statusForm, {});
+    newStatusSelect.innerHTML = '';
+    if (order.isFinal || order.allowedStatuses.length === 0) {
+      // Delivered / Cancelled: nothing can be changed
+      statusField.hidden = true;
+      statusSaveBtn.hidden = true;
+      statusCancelBtn.textContent = 'Close';
+      showMessage(statusMessage, 'info',
+        `This order is ${order.StatusName}. ${order.StatusName} orders are final and cannot be changed.`);
+    } else {
+      statusField.hidden = false;
+      statusSaveBtn.hidden = false;
+      statusCancelBtn.textContent = 'Cancel';
+      showMessage(statusMessage, '', '');
+      newStatusSelect.innerHTML = '<option value="">Choose new status…</option>' +
+        order.allowedStatuses.map((s) => `<option value="${s.StatusID}">${escapeHtml(s.StatusName)}</option>`).join('');
+    }
+
+    statusForm.hidden = false;
+    statusForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    showMessage(message, 'error', err.message);
+  }
+}
+
+function closeStatusForm() {
+  statusOrderId = null;
+  statusForm.reset();
+  showFieldErrors(statusForm, {});
+  showMessage(statusMessage, '', '');
+  statusForm.hidden = true;
+}
+
+async function saveStatus(event) {
+  event.preventDefault();
+  if (!newStatusSelect.value) {
+    showFieldErrors(statusForm, { statusId: 'Please choose a new status.' });
+    showMessage(statusMessage, 'error', 'Please choose a new status.');
+    return;
+  }
+
+  statusSaveBtn.disabled = true;
+  try {
+    const result = await api(`/api/orders/${statusOrderId}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ statusId: Number(newStatusSelect.value) }),
+    });
+    closeStatusForm();
+    await runSearch(result.orderId);   // reload from MySQL, keep current filters
+    showMessage(message, result.changed ? 'success' : 'info', (result.changed ? '✅ ' : '') + result.message);
+  } catch (err) {
+    showFieldErrors(statusForm, err.fields || {});
+    showMessage(statusMessage, 'error', err.message);
+  } finally {
+    statusSaveBtn.disabled = false;
+  }
+}
+
+function cancelStatusForm() {
+  const hadChoice = newStatusSelect.value !== '';
+  closeStatusForm();
+  if (hadChoice) showMessage(message, 'info', 'Cancelled. The order status was not changed.');
+}
+
+tbody.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-status-id]');
+  if (button) openStatusForm(Number(button.dataset.statusId));
+});
+statusForm.addEventListener('submit', saveStatus);
+statusCancelBtn.addEventListener('click', cancelStatusForm);
 
 // =====================================================================
 // Search form events
