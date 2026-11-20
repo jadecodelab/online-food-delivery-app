@@ -172,6 +172,60 @@ function validateCustomer(body) {
   return data;
 }
 
+/**
+ * Validate a menu item edit: { itemName, description, price, availabilityStatus }
+ * description is optional (empty -> NULL). RestaurantID cannot be changed.
+ */
+function validateMenuItem(body) {
+  body = body || {};
+  const data = {};
+  const errors = {};
+
+  requiredText(body, 'itemName', 'Item name', 100, data, errors);
+
+  // Optional description
+  const desc = body.description;
+  if (desc === undefined || desc === null || (typeof desc === 'string' && desc.trim() === '')) {
+    data.description = null;
+  } else if (typeof desc !== 'string') {
+    errors.description = 'Description must be text.';
+  } else if (desc.trim().replace(/\s+/g, ' ').length > 255) {
+    errors.description = 'Description must be at most 255 characters.';
+  } else {
+    data.description = desc.trim().replace(/\s+/g, ' ');
+  }
+
+  // Required price: 0 to 999999.99, at most 2 decimals (DECIMAL(8,2))
+  const price = body.price;
+  if (price === undefined || price === null || String(price).trim() === '') {
+    errors.price = 'Price is required.';
+  } else {
+    const text = String(price).trim();
+    if (!/^\d+(\.\d{1,2})?$/.test(text)) {
+      errors.price = 'Price must be a number of 0 or more with at most 2 decimal places.';
+    } else if (Number(text) > 999999.99) {
+      errors.price = 'Price must be at most 999999.99.';
+    } else {
+      data.price = Number(text);
+    }
+  }
+
+  // Required true/false
+  const available = body.availabilityStatus;
+  if (available === true || available === 'true' || available === 1 || available === '1') {
+    data.availabilityStatus = true;
+  } else if (available === false || available === 'false' || available === 0 || available === '0') {
+    data.availabilityStatus = false;
+  } else {
+    errors.availabilityStatus = 'Availability must be Available or Unavailable.';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationError('Please correct the highlighted fields.', errors);
+  }
+  return data;
+}
+
 /** Required ID (positive whole number). Writes to data[key] or errors[key]. */
 function requiredId(body, key, label, data, errors) {
   const value = body[key];
@@ -246,6 +300,7 @@ module.exports = {
   idParam,
   validateCustomer,
   validateOrder,
+  validateMenuItem,
   MAX_QUANTITY,
   optionalText,
   optionalId,

@@ -23,6 +23,50 @@
     <h1>Menu Search</h1>
     <p class="subtitle">Find menu items across all restaurants. Leave a field empty to ignore it.</p>
 
+    <!-- Edit menu item (hidden until "Edit" is clicked on a row) -->
+    <form id="item-form" class="card form-card" novalidate hidden>
+      <h2 id="item-form-title">Edit menu item</h2>
+      <p class="hint">Fields marked <span class="req">*</span> are required.
+        Changing the price does not change past orders — they keep the price paid at order time.</p>
+      <div id="item-form-message" class="message" role="alert"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="item-restaurant">Restaurant</label>
+          <input id="item-restaurant" type="text" readonly aria-describedby="item-restaurant-hint">
+          <span class="hint" id="item-restaurant-hint">An item cannot be moved to another restaurant.</span>
+        </div>
+        <div class="field">
+          <label for="item-name">Item name <span class="req">*</span></label>
+          <input id="item-name" name="itemName" type="text" maxlength="100" required>
+          <span class="field-error" data-error-for="itemName"></span>
+        </div>
+        <div class="field full">
+          <label for="item-description">Description</label>
+          <textarea id="item-description" name="description" maxlength="255" rows="2"></textarea>
+          <span class="field-error" data-error-for="description"></span>
+        </div>
+        <div class="field">
+          <label for="item-price">Price ($) <span class="req">*</span></label>
+          <input id="item-price" name="price" type="number" min="0" max="999999.99" step="0.01" inputmode="decimal" required>
+          <span class="field-error" data-error-for="price"></span>
+        </div>
+        <div class="field">
+          <label for="item-available">Availability <span class="req">*</span></label>
+          <select id="item-available" name="availabilityStatus" required>
+            <option value="true">Available</option>
+            <option value="false">Unavailable</option>
+          </select>
+          <span class="field-error" data-error-for="availabilityStatus"></span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="item-save-btn">Save changes</button>
+        <button type="button" class="btn btn-secondary" id="item-cancel-btn">Cancel</button>
+      </div>
+    </form>
+
     <form id="search-form" class="card" novalidate>
       <div class="form-grid cols-3">
         <div class="field">
@@ -76,6 +120,7 @@
             <th>Description</th>
             <th class="num">Price</th>
             <th>Status</th>
+            <th><span class="visually-hidden">Actions</span></th>
           </tr>
         </thead>
         <tbody></tbody>

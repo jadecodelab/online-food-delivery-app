@@ -4,10 +4,24 @@
 const express = require('express');
 const dao = require('../DAO');
 const {
-  ValidationError, optionalText, optionalId, optionalMoney, optionalBoolean, escapeLike,
+  ValidationError, NotFoundError, idParam, validateMenuItem,
+  optionalText, optionalId, optionalMoney, optionalBoolean, escapeLike,
 } = require('../validators');
 
 const router = express.Router();
+
+/** Read one menu item (with its restaurant name) by ID. */
+async function findMenuItem(itemId) {
+  const [row] = await dao.query(
+    `SELECT m.ItemID, m.ItemName, m.Description, m.Price, m.AvailabilityStatus,
+            r.RestaurantID, r.RestaurantName
+     FROM MENU_ITEM m
+     JOIN RESTAURANT r ON r.RestaurantID = m.RestaurantID
+     WHERE m.ItemID = ?`,
+    [itemId]
+  );
+  return row;
+}
 
 /**
  * GET /api/menu-items?search=&restaurantId=&minPrice=&maxPrice=&available=
@@ -53,6 +67,63 @@ router.get('/', async (req, res) => {
     ORDER BY r.RestaurantName, m.ItemName`;
 
   res.json(await dao.query(sql, params));
+});
+
+/**
+ * GET /api/menu-items/:id
+ * One menu item, read fresh from MySQL (fills the Edit form).
+ */
+router.get('/:id', async (req, res) => {
+  const itemId = idParam(req.params.id, 'Item ID');
+  const item = await findMenuItem(itemId);
+  if (!item) throw new NotFoundError(`Menu item #${itemId} was not found.`);
+  res.json(item);
+});
+
+/**
+ * PUT /api/menu-items/:id
+ * Body: { itemName, description, price, availabilityStatus }
+ * Update ONE menu item (WHERE ItemID = ?).
+ *
+ * - RestaurantID is NOT editable: moving an item to another restaurant would
+ *   make past orders break the one-restaurant-per-order rule.
+ * - Renaming to a name the same restaurant already uses is rejected by
+ *   UNIQUE (RestaurantID, ItemName) -> MySQL 1062 -> 409.
+ * - Changing Price does NOT change past orders: they keep PriceAtOrderTime.
+ */
+router.put('/:id', async (req, res) => {
+  const itemId = idParam(req.params.id, 'Item ID');
+  const m = validateMenuItem(req.body);
+
+  const before = await findMenuItem(itemId);
+  if (!before) throw new NotFoundError(`Menu item #${itemId} was not found.`);
+
+  const unchanged =
+    before.ItemName === m.itemName &&
+    (before.Description || null) === m.description &&
+    Number(before.Price) === m.price &&
+    Boolean(before.AvailabilityStatus) === m.availabilityStatus;
+
+  if (!unchanged) {
+    await dao.query(
+      `UPDATE MENU_ITEM
+       SET ItemName = ?, Description = ?, Price = ?, AvailabilityStatus = ?
+       WHERE ItemID = ?`,
+      [m.itemName, m.description, m.price, m.availabilityStatus ? 1 : 0, itemId]
+    );
+  }
+
+  const saved = await findMenuItem(itemId);
+
+  let message = unchanged
+    ? `No changes were made to ${saved.ItemName}.`
+    : `${saved.ItemName} (${saved.RestaurantName}) was updated.`;
+  if (!unchanged && Number(before.Price) !== m.price) {
+    message += ` Price changed from $${Number(before.Price).toFixed(2)} to $${m.price.toFixed(2)};` +
+      ' existing orders keep the price paid at order time.';
+  }
+
+  res.json({ message, item: saved, changed: !unchanged });
 });
 
 module.exports = router;
