@@ -112,6 +112,15 @@ table.data.compact th, table.data.compact td { padding: 6px 10px; }
 #status-items { margin: 8px 0 16px; }
 [hidden] { display: none !important; }
 
+/* ---------- Reports ---------- */
+.report h2 { margin: 0 0 4px; font-size: 1.2rem; }
+.report > .hint { margin: 0 0 12px; }
+.report-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 12px; }
+.report-controls .field { min-width: 160px; flex: 1 1 160px; }
+.checkbox { display: flex; align-items: center; gap: 8px; font-weight: 500; cursor: pointer; padding: 9px 0; }
+.checkbox input { width: auto; margin: 0; }
+.field-label { font-weight: 600; font-size: 0.9rem; }
+
 /* Row that was just added or changed */
 table.data tbody tr.row-new td { background: #fff4db; }
 

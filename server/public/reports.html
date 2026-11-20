@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports - Online Food Delivery</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">🍜 Online Food Delivery</a>
+      <nav class="nav" aria-label="Main">
+        <a href="/">Home</a>
+        <a href="/menu.html">Menu</a>
+        <a href="/orders.html">Orders</a>
+        <a href="/customers.html">Customers</a>
+        <a href="/reports.html">Reports</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <h1>Reports</h1>
+    <p class="subtitle">Sales summaries calculated by MySQL with GROUP BY, COUNT, SUM, AVG, and MAX.</p>
+
+    <!-- Filters shared by all three reports -->
+    <form id="filter-form" class="card" novalidate>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label for="from">From date</label>
+          <input id="from" name="from" type="date">
+        </div>
+        <div class="field">
+          <label for="to">To date</label>
+          <input id="to" name="to" type="date">
+          <span class="hint">Includes the whole day</span>
+        </div>
+        <div class="field">
+          <span class="field-label">Cancelled orders</span>
+          <label class="checkbox">
+            <input id="includeCancelled" name="includeCancelled" type="checkbox" value="true">
+            Include cancelled orders
+          </label>
+          <span class="hint">Excluded by default — they are not real sales</span>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="apply-btn">Apply to all reports</button>
+        <button type="button" class="btn btn-secondary" id="reset-btn">Reset filters</button>
+      </div>
+    </form>
+
+    <div id="message" class="message" role="status" aria-live="polite"></div>
+
+    <!-- Report 1 -->
+    <section class="card report" aria-labelledby="r1-title">
+      <h2 id="r1-title">1. Revenue by restaurant</h2>
+      <p class="hint">Which restaurants bring in the most money, how many orders each receives, and the
+        average and largest order. Restaurants with no orders are listed too.</p>
+      <div class="table-wrap">
+        <table class="data" id="revenue-table">
+          <thead>
+            <tr>
+              <th>Restaurant</th><th class="num">Orders</th><th class="num">Revenue</th>
+              <th class="num">Avg order</th><th class="num">Largest order</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Report 2 -->
+    <section class="card report" aria-labelledby="r2-title">
+      <h2 id="r2-title">2. Top-selling menu items</h2>
+      <p class="hint">The most popular dishes by units sold — useful for planning stock and promotions.</p>
+      <form id="top-form" class="report-controls" novalidate>
+        <div class="field">
+          <label for="top-restaurant">Restaurant</label>
+          <select id="top-restaurant" name="restaurantId"><option value="">All restaurants</option></select>
+        </div>
+        <div class="field">
+          <label for="top-limit">Show top</label>
+          <select id="top-limit" name="limit">
+            <option value="5">5</option><option value="10" selected>10</option>
+            <option value="20">20</option><option value="50">50</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="top-min">Min units sold</label>
+          <input id="top-min" name="minUnits" type="number" min="1" step="1" inputmode="numeric" placeholder="Any">
+        </div>
+      </form>
+      <div class="table-wrap">
+        <table class="data" id="top-table">
+          <thead>
+            <tr>
+              <th class="num">#</th><th>Item</th><th>Restaurant</th>
+              <th class="num">Units sold</th><th class="num">Orders</th><th class="num">Revenue</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Report 3 -->
+    <section class="card report" aria-labelledby="r3-title">
+      <h2 id="r3-title">3. Customer spending</h2>
+      <p class="hint">Who the best customers are and when they last ordered — useful for loyalty offers
+        and for spotting customers who have not ordered recently.</p>
+      <form id="spend-form" class="report-controls" novalidate>
+        <label class="checkbox">
+          <input id="only-with-orders" name="onlyWithOrders" type="checkbox" value="true">
+          Only customers with orders
+        </label>
+      </form>
+      <div class="table-wrap">
+        <table class="data" id="spend-table">
+          <thead>
+            <tr>
+              <th>Customer</th><th>Email</th><th class="num">Orders</th><th class="num">Total spent</th>
+              <th class="num">Avg order</th><th>Last order</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/main.js"></script>
+  <script src="/reports.js"></script>
+</body>
+</html>
