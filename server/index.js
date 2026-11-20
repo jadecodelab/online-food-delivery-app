@@ -8,6 +8,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 const express = require('express');
 const dao = require('./DAO');
+const { mapDbError } = require('./errors');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -49,10 +50,27 @@ app.use('/api', (req, res) => {
 // and the browser always receives a JSON message.
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  // Invalid user input -> 400 with the validator's message
+  // Invalid user input -> 400 with the validator's message (+ per-field messages)
   if (err.name === 'ValidationError') {
-    return res.status(400).json({ error: err.message });
+    return res.status(400).json({ error: err.message, fields: err.fields });
   }
+
+  // Request body is not valid JSON
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'The request data is not valid JSON.' });
+  }
+
+  // MySQL constraint violation (duplicate, foreign key, CHECK, ...) -> 4xx
+  const dbError = mapDbError(err);
+  if (dbError) {
+    console.warn(`[constraint] ${req.method} ${req.originalUrl}: ${dbError.dbCode} ${err.sqlMessage}`);
+    return res.status(dbError.status).json({
+      error: dbError.message,
+      fields: dbError.fields,
+      dbCode: dbError.dbCode,
+    });
+  }
+
   console.error(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}\n`, err);
   res.status(500).json({ error: 'Something went wrong on the server. Please try again.' });
 });

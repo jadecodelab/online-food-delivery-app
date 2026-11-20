@@ -8,10 +8,15 @@
 // =====================================================================
 
 class ValidationError extends Error {
-  constructor(message) {
+  /**
+   * @param {string} message  overall message shown to the user
+   * @param {object} [fields] optional per-field messages, e.g. { email: 'Email is required.' }
+   */
+  constructor(message, fields = null) {
     super(message);
     this.name = 'ValidationError';
     this.status = 400;
+    this.fields = fields;
   }
 }
 
@@ -81,8 +86,77 @@ function escapeLike(text) {
   return text.replace(/[\\%_]/g, (ch) => '\\' + ch);
 }
 
+// ---------------------------------------------------------------------
+// Form validation (insert / update): collects ALL field errors at once
+// so the user can fix everything in one go.
+// ---------------------------------------------------------------------
+
+const NAME_PATTERN  = /^\p{L}[\p{L} '.-]*$/u;            // letters, spaces, ' . -
+const PHONE_PATTERN = /^[0-9+()\-.\s]+$/;               // digits and + ( ) - . space
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;     // something@something.something
+
+/**
+ * Validate a required text field. Trims it and collapses repeated spaces.
+ * Writes the clean value into data[key] or a message into errors[key].
+ */
+function requiredText(body, key, label, maxLength, data, errors) {
+  const value = body[key];
+  if (value === undefined || value === null || (typeof value === 'string' && value.trim() === '')) {
+    errors[key] = `${label} is required.`;
+    return;
+  }
+  if (typeof value !== 'string') {
+    errors[key] = `${label} must be text.`;
+    return;
+  }
+  const text = value.trim().replace(/\s+/g, ' ');
+  if (text.length > maxLength) {
+    errors[key] = `${label} must be at most ${maxLength} characters.`;
+    return;
+  }
+  data[key] = text;
+}
+
+/**
+ * Validate a customer form (used for both insert and update).
+ * Returns clean data, or throws ValidationError with per-field messages.
+ */
+function validateCustomer(body) {
+  body = body || {};
+  const data = {};
+  const errors = {};
+
+  requiredText(body, 'firstName',   'First name',   50,  data, errors);
+  requiredText(body, 'lastName',    'Last name',    50,  data, errors);
+  requiredText(body, 'phoneNumber', 'Phone number', 20,  data, errors);
+  requiredText(body, 'email',       'Email',        100, data, errors);
+  requiredText(body, 'address',     'Address',      200, data, errors);
+
+  if (data.firstName && !NAME_PATTERN.test(data.firstName)) {
+    errors.firstName = 'First name can only contain letters, spaces, hyphens, apostrophes, and periods.';
+  }
+  if (data.lastName && !NAME_PATTERN.test(data.lastName)) {
+    errors.lastName = 'Last name can only contain letters, spaces, hyphens, apostrophes, and periods.';
+  }
+  if (data.phoneNumber) {
+    const digitCount = data.phoneNumber.replace(/\D/g, '').length;
+    if (!PHONE_PATTERN.test(data.phoneNumber) || digitCount < 7 || digitCount > 15) {
+      errors.phoneNumber = 'Phone number must have 7-15 digits (you may also use spaces, +, -, ( ) and .).';
+    }
+  }
+  if (data.email && !EMAIL_PATTERN.test(data.email)) {
+    errors.email = 'Email must look like name@example.com.';
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationError('Please correct the highlighted fields.', errors);
+  }
+  return data;
+}
+
 module.exports = {
   ValidationError,
+  validateCustomer,
   optionalText,
   optionalId,
   optionalMoney,

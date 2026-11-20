@@ -20,8 +20,53 @@
   </header>
 
   <main class="container">
-    <h1>Customers</h1>
-    <p class="subtitle">Search customers by name, email, or phone number.</p>
+    <div class="page-head">
+      <div>
+        <h1>Customers</h1>
+        <p class="subtitle">Search customers by name, email, or phone number.</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="add-btn">+ Add customer</button>
+    </div>
+
+    <!-- Add customer form (hidden until "+ Add customer" is clicked) -->
+    <form id="customer-form" class="card form-card" novalidate hidden>
+      <h2 id="form-title">Add customer</h2>
+      <p class="hint">Fields marked <span class="req">*</span> are required.</p>
+      <div id="form-message" class="message" role="alert"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="firstName">First name <span class="req">*</span></label>
+          <input id="firstName" name="firstName" type="text" maxlength="50" autocomplete="given-name" required>
+          <span class="field-error" id="err-firstName"></span>
+        </div>
+        <div class="field">
+          <label for="lastName">Last name <span class="req">*</span></label>
+          <input id="lastName" name="lastName" type="text" maxlength="50" autocomplete="family-name" required>
+          <span class="field-error" id="err-lastName"></span>
+        </div>
+        <div class="field">
+          <label for="email">Email <span class="req">*</span></label>
+          <input id="email" name="email" type="email" maxlength="100" autocomplete="email" placeholder="name@example.com" required>
+          <span class="field-error" id="err-email"></span>
+        </div>
+        <div class="field">
+          <label for="phoneNumber">Phone number <span class="req">*</span></label>
+          <input id="phoneNumber" name="phoneNumber" type="tel" maxlength="20" autocomplete="tel" placeholder="217-555-0199" required>
+          <span class="field-error" id="err-phoneNumber"></span>
+        </div>
+        <div class="field full">
+          <label for="address">Address <span class="req">*</span></label>
+          <input id="address" name="address" type="text" maxlength="200" autocomplete="street-address" placeholder="Street, City, State ZIP" required>
+          <span class="field-error" id="err-address"></span>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="save-btn">Save customer</button>
+        <button type="button" class="btn btn-secondary" id="cancel-btn">Cancel</button>
+      </div>
+    </form>
 
     <form id="search-form" class="card" novalidate>
       <div class="field">

@@ -71,7 +71,19 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent);
 }
-input.invalid, select.invalid { border-color: var(--err-text); background: var(--err-bg); }
+input.invalid, select.invalid, textarea.invalid { border-color: var(--err-text); background: var(--err-bg); }
+.field-error { color: var(--err-text); font-size: 0.85rem; }
+.field-error:empty { display: none; }
+.req { color: var(--err-text); }
+.field.full { grid-column: 1 / -1; }
+
+.page-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.form-card { border-color: var(--accent); }
+.form-card h2 { margin: 0 0 4px; font-size: 1.2rem; }
+.form-card[hidden] { display: none; }
+
+/* Row that was just added or changed */
+table.data tbody tr.row-new td { background: #fff4db; }
 
 .form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .btn {

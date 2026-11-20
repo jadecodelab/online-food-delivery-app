@@ -22,9 +22,38 @@ async function api(url, options = {}) {
   try { data = await res.json(); } catch { /* empty or non-JSON body */ }
 
   if (!res.ok) {
-    throw new Error((data && data.error) || `Request failed (HTTP ${res.status}).`);
+    const error = new Error((data && data.error) || `Request failed (HTTP ${res.status}).`);
+    error.status = res.status;
+    error.fields = (data && data.fields) || null;   // per-field messages, if any
+    throw error;
   }
   return data;
+}
+
+/**
+ * Show per-field error messages under form inputs and highlight them.
+ * Expects inputs with id="<field>" and a <span class="field-error" id="err-<field>">.
+ * Pass {} to clear all errors in the form.
+ */
+function showFieldErrors(formElement, errors) {
+  formElement.querySelectorAll('.field-error').forEach((span) => { span.textContent = ''; });
+  formElement.querySelectorAll('.invalid').forEach((el) => el.classList.remove('invalid'));
+
+  let first = null;
+  Object.entries(errors || {}).forEach(([field, text]) => {
+    const input = formElement.querySelector(`#${field}`);
+    const span = formElement.querySelector(`#err-${field}`);
+    if (input) {
+      input.classList.add('invalid');
+      input.setAttribute('aria-invalid', 'true');
+      first = first || input;
+    }
+    if (span) span.textContent = text;
+  });
+  formElement.querySelectorAll('[aria-invalid]').forEach((el) => {
+    if (!el.classList.contains('invalid')) el.removeAttribute('aria-invalid');
+  });
+  if (first) first.focus();
 }
 
 /** Show a success / error / info message in a .message element ('' clears it). */
