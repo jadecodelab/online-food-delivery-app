@@ -55,6 +55,11 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: err.message, fields: err.fields });
   }
 
+  // Record not found (e.g. editing a customer ID that does not exist) -> 404
+  if (err.name === 'NotFoundError') {
+    return res.status(404).json({ error: err.message });
+  }
+
   // Request body is not valid JSON
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'The request data is not valid JSON.' });

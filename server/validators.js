@@ -20,6 +20,24 @@ class ValidationError extends Error {
   }
 }
 
+/** The requested record does not exist -> 404. */
+class NotFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'NotFoundError';
+    this.status = 404;
+  }
+}
+
+/** Read a required ID from the URL (e.g. /api/customers/:id). Invalid -> 400. */
+function idParam(value, label) {
+  const text = String(value || '').trim();
+  if (!/^\d+$/.test(text) || Number(text) < 1 || Number(text) > 2147483647) {
+    throw new ValidationError(`${label} must be a positive whole number.`);
+  }
+  return Number(text);
+}
+
 const isEmpty = (v) => v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
 
 /** Optional free text (e.g. a search keyword). */
@@ -224,6 +242,8 @@ function validateOrder(body) {
 
 module.exports = {
   ValidationError,
+  NotFoundError,
+  idParam,
   validateCustomer,
   validateOrder,
   MAX_QUANTITY,

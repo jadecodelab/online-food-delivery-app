@@ -1,6 +1,8 @@
 // =====================================================================
-// customers.js - Customer search + Add customer
-// (M8 will add "Edit" using the same form.)
+// customers.js - Customer search + Add customer + Edit customer
+// The same form is used for adding and editing:
+//   editingId === null -> Add mode  (POST /api/customers)
+//   editingId === 5    -> Edit mode (PUT  /api/customers/5)
 // =====================================================================
 
 // ---------- Search ----------
@@ -19,9 +21,13 @@ const customerForm = document.getElementById('customer-form');
 const formMessage  = document.getElementById('form-message');
 const saveBtn      = document.getElementById('save-btn');
 const cancelBtn    = document.getElementById('cancel-btn');
+const formTitle    = document.getElementById('form-title');
 const FIELDS = ['firstName', 'lastName', 'email', 'phoneNumber', 'address'];
 
-/** Draw the results table (all text escaped). highlightId marks a new row. */
+let editingId = null;        // null = adding; a number = editing that customer
+let originalValues = null;   // values loaded for editing (to detect unsaved changes)
+
+/** Draw the results table (all text escaped). highlightId marks a new/updated row. */
 function renderResults(customers, highlightId = null) {
   tbody.innerHTML = customers.map((c) => `
     <tr${c.CustomerID === highlightId ? ' class="row-new"' : ''}>
@@ -33,6 +39,10 @@ function renderResults(customers, highlightId = null) {
       <td data-label="Orders" class="num">${c.OrderCount > 0
         ? `<a href="/orders.html?customerId=${c.CustomerID}">${c.OrderCount} — view</a>`
         : '<span class="text-muted">0</span>'}</td>
+      <td data-label="Actions">
+        <button type="button" class="btn btn-secondary btn-small" data-edit-id="${c.CustomerID}"
+                aria-label="Edit ${escapeHtml(c.FirstName)} ${escapeHtml(c.LastName)}">Edit</button>
+      </td>
     </tr>`).join('');
 
   table.hidden = customers.length === 0;
@@ -57,18 +67,53 @@ async function runSearch(highlightId = null) {
   }
 }
 
-// ---------- Add customer form ----------
+// ---------- Add / Edit customer form ----------
 
+/** Open the form empty, for adding a new customer. */
 function openForm() {
+  editingId = null;
+  originalValues = null;
   customerForm.reset();
   showFieldErrors(customerForm, {});
   showMessage(formMessage, '', '');
+  formTitle.textContent = 'Add customer';
+  saveBtn.textContent = 'Save customer';
   customerForm.hidden = false;
   addBtn.hidden = true;
   document.getElementById('firstName').focus();
 }
 
+/**
+ * Open the form filled with one customer's current data, for editing.
+ * The data is loaded fresh from MySQL (not copied from the table on screen).
+ */
+async function openEditForm(customerId) {
+  if (!customerForm.hidden && formHasUnsavedChanges() &&
+      !confirm('Discard your unsaved changes in the open form?')) return;
+  try {
+    const c = await api(`/api/customers/${customerId}`);
+    editingId = c.CustomerID;
+    originalValues = {
+      firstName: c.FirstName, lastName: c.LastName, email: c.Email,
+      phoneNumber: c.PhoneNumber, address: c.Address,
+    };
+    FIELDS.forEach((f) => { document.getElementById(f).value = originalValues[f]; });
+    showFieldErrors(customerForm, {});
+    showMessage(formMessage, '', '');
+    formTitle.textContent = `Edit customer #${c.CustomerID}`;
+    saveBtn.textContent = 'Save changes';
+    customerForm.hidden = false;
+    addBtn.hidden = true;
+    customerForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('firstName').focus({ preventScroll: true });
+  } catch (err) {
+    showMessage(message, 'error', err.message);   // e.g. 404 customer not found
+  }
+}
+
 function closeForm() {
+  editingId = null;
+  originalValues = null;
   customerForm.reset();
   showFieldErrors(customerForm, {});
   showMessage(formMessage, '', '');
@@ -76,9 +121,12 @@ function closeForm() {
   addBtn.hidden = false;
 }
 
-/** True if the user has typed anything into the form. */
-function formHasInput() {
-  return FIELDS.some((f) => document.getElementById(f).value.trim() !== '');
+/** Add mode: anything typed? Edit mode: anything different from the loaded values? */
+function formHasUnsavedChanges() {
+  if (editingId === null) {
+    return FIELDS.some((f) => document.getElementById(f).value.trim() !== '');
+  }
+  return FIELDS.some((f) => document.getElementById(f).value.trim() !== originalValues[f]);
 }
 
 /** Read the form into a plain object (sent as JSON). */
@@ -134,12 +182,18 @@ async function saveCustomer(event) {
   showMessage(formMessage, '', '');
   saveBtn.disabled = true;
   try {
-    const result = await api('/api/customers', { method: 'POST', body: JSON.stringify(data) });
+    const isEdit = editingId !== null;
+    const result = isEdit
+      ? await api(`/api/customers/${editingId}`, { method: 'PUT', body: JSON.stringify(data) })
+      : await api('/api/customers', { method: 'POST', body: JSON.stringify(data) });
     closeForm();
-    // Reload the list from MySQL (proves it was saved) and highlight the new row
-    searchInput.value = '';
+    // Reload the list from MySQL (proves it was saved) and highlight the row.
+    // After adding, clear the search so the new customer is visible;
+    // after editing, keep the user's current search.
+    if (!isEdit) searchInput.value = '';
     await runSearch(result.customer.CustomerID);
-    showMessage(message, 'success', '✅ ' + result.message);
+    const changed = !isEdit || result.changed;
+    showMessage(message, changed ? 'success' : 'info', (changed ? '✅ ' : '') + result.message);
   } catch (err) {
     // Server validation (400) or database constraint (e.g. duplicate email, 409)
     showFieldErrors(customerForm, err.fields || {});
@@ -150,13 +204,23 @@ async function saveCustomer(event) {
 }
 
 function cancelForm() {
-  if (formHasInput() && !confirm('Discard this new customer? Nothing will be saved.')) return;
+  const isEdit = editingId !== null;
+  const question = isEdit
+    ? 'Discard your changes? The customer will stay as it was.'
+    : 'Discard this new customer? Nothing will be saved.';
+  if (formHasUnsavedChanges() && !confirm(question)) return;
   closeForm();
-  showMessage(message, 'info', 'Cancelled. No customer was added.');
+  showMessage(message, 'info', isEdit ? 'Cancelled. No changes were saved.' : 'Cancelled. No customer was added.');
 }
 
 // ---------- Events ----------
 addBtn.addEventListener('click', openForm);
+
+// One listener for all Edit buttons in the table (rows are redrawn after each search)
+tbody.addEventListener('click', (event) => {
+  const button = event.target.closest('button[data-edit-id]');
+  if (button) openEditForm(Number(button.dataset.editId));
+});
 customerForm.addEventListener('submit', saveCustomer);
 cancelBtn.addEventListener('click', cancelForm);
 

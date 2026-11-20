@@ -3,7 +3,23 @@
 // =====================================================================
 const express = require("express");
 const dao = require("../DAO");
-const { optionalText, escapeLike, validateCustomer } = require("../validators");
+const {
+  optionalText,
+  escapeLike,
+  validateCustomer,
+  idParam,
+  NotFoundError,
+} = require("../validators");
+
+/** Read one customer by ID (returns undefined if not found). */
+async function findCustomer(customerId) {
+  const [row] = await dao.query(
+    `SELECT CustomerID, FirstName, LastName, PhoneNumber, Email, Address
+     FROM CUSTOMER WHERE CustomerID = ?`,
+    [customerId]
+  );
+  return row;
+}
 
 const router = express.Router();
 
@@ -73,15 +89,67 @@ router.post("/", async (req, res) => {
     [c.firstName, c.lastName, c.phoneNumber, c.email, c.address]
   );
 
-  const [saved] = await dao.query(
-    `SELECT CustomerID, FirstName, LastName, PhoneNumber, Email, Address
-     FROM CUSTOMER WHERE CustomerID = ?`,
-    [result.insertId]
-  );
+  const saved = await findCustomer(result.insertId);
 
   res.status(201).json({
     message: `Customer ${saved.FirstName} ${saved.LastName} was added (ID ${saved.CustomerID}).`,
     customer: saved,
+  });
+});
+
+/**
+ * GET /api/customers/:id
+ * One customer, read fresh from MySQL (used to fill the Edit form).
+ */
+router.get("/:id", async (req, res) => {
+  const customerId = idParam(req.params.id, "Customer ID");
+  const customer = await findCustomer(customerId);
+  if (!customer) throw new NotFoundError(`Customer #${customerId} was not found.`);
+  res.json(customer);
+});
+
+/**
+ * PUT /api/customers/:id
+ * Body: { firstName, lastName, phoneNumber, email, address }
+ * Update ONE existing customer.
+ *
+ * - Same validation as insert (validateCustomer).
+ * - WHERE CustomerID = ? targets only the intended record (primary key),
+ *   so exactly one row can change.
+ * - Changing the email to one another customer uses -> UNIQUE constraint
+ *   (error 1062) -> 409 "already exists".
+ * - Unknown ID -> 404. No actual change -> success with "No changes were made".
+ */
+router.put("/:id", async (req, res) => {
+  const customerId = idParam(req.params.id, "Customer ID");
+  const c = validateCustomer(req.body);
+
+  const before = await findCustomer(customerId);
+  if (!before) throw new NotFoundError(`Customer #${customerId} was not found.`);
+
+  const unchanged =
+    before.FirstName === c.firstName &&
+    before.LastName === c.lastName &&
+    before.PhoneNumber === c.phoneNumber &&
+    before.Email === c.email &&
+    before.Address === c.address;
+
+  if (!unchanged) {
+    await dao.query(
+      `UPDATE CUSTOMER
+       SET FirstName = ?, LastName = ?, PhoneNumber = ?, Email = ?, Address = ?
+       WHERE CustomerID = ?`,
+      [c.firstName, c.lastName, c.phoneNumber, c.email, c.address, customerId]
+    );
+  }
+
+  const saved = await findCustomer(customerId);
+  res.json({
+    message: unchanged
+      ? `No changes were made to ${saved.FirstName} ${saved.LastName}.`
+      : `Customer ${saved.FirstName} ${saved.LastName} (ID ${saved.CustomerID}) was updated.`,
+    customer: saved,
+    changed: !unchanged,
   });
 });
 

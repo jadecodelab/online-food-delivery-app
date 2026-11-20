@@ -101,6 +101,11 @@ input.invalid, select.invalid, textarea.invalid { border-color: var(--err-text);
 fieldset.field { border: none; padding: 0; margin: 0; min-width: 0; }
 fieldset.field legend { font-weight: 600; font-size: 0.9rem; padding: 0; margin-bottom: 4px; }
 
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
 /* Row that was just added or changed */
 table.data tbody tr.row-new td { background: #fff4db; }
 
@@ -114,6 +119,7 @@ table.data tbody tr.row-new td { background: #fff4db; }
 .btn-secondary { background: #fff; color: var(--text); border-color: var(--border); }
 .btn-secondary:hover { background: var(--bg); }
 .btn:disabled { opacity: 0.6; cursor: wait; }
+.btn-small { padding: 4px 12px; font-size: 0.85rem; }   /* must come after .btn to override it */
 
 /* ---------- Messages ---------- */
 .message { padding: 10px 14px; border-radius: 6px; margin: 0 0 16px; border: 1px solid; }
