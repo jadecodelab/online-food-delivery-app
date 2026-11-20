@@ -89,10 +89,10 @@ function buildQuery() {
   return params.toString();
 }
 
-/** Draw the results table (all text escaped). */
-function renderResults(orders) {
+/** Draw the results table (all text escaped). highlightId marks a new order. */
+function renderResults(orders, highlightId = null) {
   tbody.innerHTML = orders.map((o) => `
-    <tr>
+    <tr${o.OrderID === highlightId ? ' class="row-new"' : ''}>
       <td data-label="Order #"><strong>#${o.OrderID}</strong></td>
       <td data-label="Date">${formatDateTime(o.OrderDate)}</td>
       <td data-label="Customer">${escapeHtml(o.CustomerName)}</td>
@@ -115,7 +115,7 @@ function renderResults(orders) {
 }
 
 /** Validate, ask the server, and show the results. */
-async function runSearch() {
+async function runSearch(highlightId = null) {
   const error = validateForm();
   if (error) {
     showMessage(message, 'error', error);
@@ -128,7 +128,7 @@ async function runSearch() {
   try {
     const query = buildQuery();
     const orders = await api('/api/orders' + (query ? '?' + query : ''));
-    renderResults(orders);
+    renderResults(orders, highlightId);
     updateCustomerNote(orders);
   } catch (err) {
     table.hidden = true;
@@ -139,6 +139,220 @@ async function runSearch() {
   }
 }
 
+// =====================================================================
+// Place order form
+// =====================================================================
+const newOrderBtn      = document.getElementById('new-order-btn');
+const orderForm        = document.getElementById('order-form');
+const orderMessage     = document.getElementById('order-form-message');
+const orderCustomer    = document.getElementById('order-customer');
+const orderRestaurant  = document.getElementById('order-restaurant');
+const orderAddress     = document.getElementById('order-address');
+const picker           = document.getElementById('items');
+const estimate         = document.getElementById('order-estimate');
+const placeBtn         = document.getElementById('place-btn');
+const orderCancelBtn   = document.getElementById('order-cancel-btn');
+const MAX_QTY = 99;
+
+let customersById = new Map();   // for filling in the customer's address
+let autoAddress = '';            // address we filled in automatically
+let currentRestaurant = '';      // to undo a restaurant change the user cancels
+
+/** Load customers and restaurants for the order form dropdowns (once). */
+async function loadOrderFormOptions() {
+  if (customersById.size > 0) return;
+  const [customers, restaurants] = await Promise.all([api('/api/customers'), api('/api/restaurants')]);
+  customersById = new Map(customers.map((c) => [String(c.CustomerID), c]));
+  customers.forEach((c) => {
+    const option = document.createElement('option');
+    option.value = c.CustomerID;
+    option.textContent = `${c.FirstName} ${c.LastName} (${c.Email})`;
+    orderCustomer.appendChild(option);
+  });
+  fillSelect(orderRestaurant, restaurants, 'RestaurantID', 'RestaurantName');
+}
+
+/** Show the available menu items of the chosen restaurant with quantity boxes. */
+async function loadPicker(restaurantId) {
+  estimate.textContent = '';
+  if (!restaurantId) {
+    picker.innerHTML = '<p class="picker-empty">Choose a restaurant to see its available menu items.</p>';
+    return;
+  }
+  picker.innerHTML = '<p class="picker-empty">Loading menu…</p>';
+  const items = await api(`/api/menu-items?restaurantId=${encodeURIComponent(restaurantId)}&available=true`);
+  if (items.length === 0) {
+    picker.innerHTML = '<p class="picker-empty">This restaurant has no available items right now.</p>';
+    return;
+  }
+  picker.innerHTML = items.map((item) => `
+    <div class="picker-row">
+      <div>
+        <div class="item-name">${escapeHtml(item.ItemName)}</div>
+        <div class="item-desc">${escapeHtml(item.Description)}</div>
+      </div>
+      <div class="item-price">${formatMoney(item.Price)}</div>
+      <input type="number" min="0" max="${MAX_QTY}" step="1" value="0" inputmode="numeric"
+             aria-label="Quantity of ${escapeHtml(item.ItemName)}"
+             data-item-id="${item.ItemID}" data-price="${item.Price}">
+    </div>`).join('');
+}
+
+function quantityInputs() {
+  return [...picker.querySelectorAll('input[data-item-id]')];
+}
+
+/** Estimated total while choosing (display only; the saved total comes from SQL). */
+function updateEstimate() {
+  let count = 0;
+  let total = 0;
+  quantityInputs().forEach((input) => {
+    const qty = Number(input.value);
+    const row = input.closest('.picker-row');
+    const valid = Number.isInteger(qty) && qty > 0 && qty <= MAX_QTY;
+    row.classList.toggle('selected', valid);
+    if (valid) { count += qty; total += qty * Number(input.dataset.price); }
+  });
+  estimate.innerHTML = count > 0
+    ? `${count} item(s) · estimated total ${formatMoney(total)} <span class="text-muted">(final total is calculated by the database)</span>`
+    : '';
+}
+
+function hasSelectedItems() {
+  return quantityInputs().some((input) => Number(input.value) > 0);
+}
+
+async function openOrderForm() {
+  orderForm.reset();
+  showFieldErrors(orderForm, {});
+  showMessage(orderMessage, '', '');
+  autoAddress = '';
+  currentRestaurant = '';
+  orderForm.hidden = false;
+  newOrderBtn.hidden = true;
+  try {
+    await loadOrderFormOptions();
+    await loadPicker('');
+    orderCustomer.focus();
+  } catch (err) {
+    showMessage(orderMessage, 'error', 'Could not load the form: ' + err.message);
+  }
+}
+
+function closeOrderForm() {
+  orderForm.reset();
+  showFieldErrors(orderForm, {});
+  showMessage(orderMessage, '', '');
+  picker.innerHTML = '';
+  estimate.textContent = '';
+  orderForm.hidden = true;
+  newOrderBtn.hidden = false;
+}
+
+function orderFormHasInput() {
+  return orderCustomer.value || orderRestaurant.value || orderAddress.value.trim() || hasSelectedItems();
+}
+
+/** Browser-side validation (the server checks again). Returns an errors object. */
+function validateOrderForm(data) {
+  const errors = {};
+  if (!data.customerId) errors.customerId = 'Customer is required.';
+  if (!data.restaurantId) errors.restaurantId = 'Restaurant is required.';
+  if (!data.deliveryAddress) errors.deliveryAddress = 'Delivery address is required.';
+  else if (data.deliveryAddress.length > 200) errors.deliveryAddress = 'Delivery address must be at most 200 characters.';
+
+  const badQty = quantityInputs().find((input) => {
+    const qty = Number(input.value);
+    return input.validity.badInput || !Number.isInteger(qty) || qty < 0 || qty > MAX_QTY;
+  });
+  if (badQty) errors.items = `Each quantity must be a whole number from 0 to ${MAX_QTY}.`;
+  else if (data.restaurantId && data.items.length === 0) errors.items = 'Set a quantity of 1 or more for at least one item.';
+  return errors;
+}
+
+function readOrderForm() {
+  return {
+    customerId: orderCustomer.value,
+    restaurantId: orderRestaurant.value,
+    deliveryAddress: orderAddress.value.trim().replace(/\s+/g, ' '),
+    items: quantityInputs()
+      .filter((input) => Number(input.value) > 0)
+      .map((input) => ({ itemId: Number(input.dataset.itemId), quantity: Number(input.value) })),
+  };
+}
+
+async function placeOrder(event) {
+  event.preventDefault();
+  const data = readOrderForm();
+  const errors = validateOrderForm(data);
+  picker.classList.toggle('invalid', Boolean(errors.items));
+  if (Object.keys(errors).length > 0) {
+    showFieldErrors(orderForm, errors);
+    showMessage(orderMessage, 'error', 'Please correct the highlighted fields.');
+    return;
+  }
+
+  showFieldErrors(orderForm, {});
+  showMessage(orderMessage, '', '');
+  placeBtn.disabled = true;
+  try {
+    const result = await api('/api/orders', { method: 'POST', body: JSON.stringify(data) });
+    closeOrderForm();
+    // Show all orders again, reloaded from MySQL, with the new one highlighted
+    form.reset();
+    customerIdInput.value = '';
+    history.replaceState(null, '', '/orders.html');
+    await runSearch(result.order.OrderID);
+    showMessage(message, 'success', '✅ ' + result.message);
+  } catch (err) {
+    // Server validation, business rule (wrong restaurant / unavailable), or FK error
+    showFieldErrors(orderForm, err.fields || {});
+    picker.classList.toggle('invalid', Boolean(err.fields && err.fields.items));
+    showMessage(orderMessage, 'error', err.message);
+  } finally {
+    placeBtn.disabled = false;
+  }
+}
+
+function cancelOrderForm() {
+  if (orderFormHasInput() && !confirm('Discard this order? Nothing will be saved.')) return;
+  closeOrderForm();
+  showMessage(message, 'info', 'Cancelled. No order was placed.');
+}
+
+// Fill the delivery address from the chosen customer (unless the user typed their own)
+orderCustomer.addEventListener('change', () => {
+  const customer = customersById.get(orderCustomer.value);
+  const typed = orderAddress.value.trim();
+  if (customer && (typed === '' || typed === autoAddress)) {
+    orderAddress.value = customer.Address;
+    autoAddress = customer.Address;
+  }
+});
+
+// Changing restaurant clears chosen items (one restaurant per order)
+orderRestaurant.addEventListener('change', async () => {
+  if (hasSelectedItems() &&
+      !confirm('Changing the restaurant will clear the items you selected. Continue?')) {
+    orderRestaurant.value = currentRestaurant;
+    return;
+  }
+  currentRestaurant = orderRestaurant.value;
+  try {
+    await loadPicker(orderRestaurant.value);
+  } catch (err) {
+    showMessage(orderMessage, 'error', 'Could not load menu: ' + err.message);
+  }
+});
+
+picker.addEventListener('input', updateEstimate);
+newOrderBtn.addEventListener('click', openOrderForm);
+orderForm.addEventListener('submit', placeOrder);
+orderCancelBtn.addEventListener('click', cancelOrderForm);
+
+// =====================================================================
+// Search form events
+// =====================================================================
 form.addEventListener('submit', (event) => {
   event.preventDefault();
   runSearch();

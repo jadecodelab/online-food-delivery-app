@@ -60,7 +60,14 @@ line items are removed together with the order.
 
 - **One restaurant per order:** every `ORDER_ITEM.ItemID` must belong to the same
   restaurant as `ORDERS.RestaurantID`. The backend checks this inside the
-  place-order transaction before inserting.
+  place-order transaction (`SELECT … FROM MENU_ITEM WHERE ItemID IN (…) FOR SHARE`)
+  and rolls back the whole order if any item is from another restaurant.
+  *Alternative considered:* adding `RestaurantID` to ORDER_ITEM with composite
+  foreign keys `(ItemID, RestaurantID) → MENU_ITEM` and `(OrderID, RestaurantID) → ORDERS`
+  would let MySQL enforce the rule itself. It was rejected because it adds a
+  redundant column to ORDER_ITEM (the restaurant is already reachable through
+  `ItemID`), and the transaction must read each item anyway to copy its current
+  price and check availability.
 - **Each restaurant offers at least one menu item:** a minimum-participation rule
   that foreign keys cannot express. Ensured by the sample data and application.
 - **Each order contains at least one item:** the place-order form and backend

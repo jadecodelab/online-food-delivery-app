@@ -154,9 +154,79 @@ function validateCustomer(body) {
   return data;
 }
 
+/** Required ID (positive whole number). Writes to data[key] or errors[key]. */
+function requiredId(body, key, label, data, errors) {
+  const value = body[key];
+  if (value === undefined || value === null || String(value).trim() === '') {
+    errors[key] = `${label} is required.`;
+    return;
+  }
+  const text = String(value).trim();
+  if (!/^\d+$/.test(text) || Number(text) < 1 || Number(text) > 2147483647) {
+    errors[key] = `${label} must be a positive whole number.`;
+    return;
+  }
+  data[key] = Number(text);
+}
+
+const MAX_ORDER_LINES = 20;
+const MAX_QUANTITY = 99;
+
+/**
+ * Validate a new order: { customerId, restaurantId, deliveryAddress, items: [{ itemId, quantity }] }
+ * Only checks the FORMAT here. Whether the customer/restaurant/items exist,
+ * belong together, and are available is checked against the database
+ * inside the place-order transaction.
+ */
+function validateOrder(body) {
+  body = body || {};
+  const data = {};
+  const errors = {};
+
+  requiredId(body, 'customerId', 'Customer', data, errors);
+  requiredId(body, 'restaurantId', 'Restaurant', data, errors);
+  requiredText(body, 'deliveryAddress', 'Delivery address', 200, data, errors);
+
+  const items = body.items;
+  if (!Array.isArray(items) || items.length === 0) {
+    errors.items = 'Add at least one menu item with a quantity of 1 or more.';
+  } else if (items.length > MAX_ORDER_LINES) {
+    errors.items = `An order can have at most ${MAX_ORDER_LINES} different items.`;
+  } else {
+    const seen = new Set();
+    data.items = [];
+    for (const line of items) {
+      const itemId = Number(line && line.itemId);
+      const quantity = Number(line && line.quantity);
+      if (!Number.isInteger(itemId) || itemId < 1) {
+        errors.items = 'Each item must have a valid item ID.';
+        break;
+      }
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
+        errors.items = `Each quantity must be a whole number from 1 to ${MAX_QUANTITY}.`;
+        break;
+      }
+      if (seen.has(itemId)) {
+        // (OrderID, ItemID) is the primary key of ORDER_ITEM: one row per item
+        errors.items = 'The same item appears twice. Combine it into one line with a larger quantity.';
+        break;
+      }
+      seen.add(itemId);
+      data.items.push({ itemId, quantity });
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new ValidationError('Please correct the highlighted fields.', errors);
+  }
+  return data;
+}
+
 module.exports = {
   ValidationError,
   validateCustomer,
+  validateOrder,
+  MAX_QUANTITY,
   optionalText,
   optionalId,
   optionalMoney,

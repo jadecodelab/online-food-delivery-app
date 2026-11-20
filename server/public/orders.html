@@ -20,8 +20,59 @@
   </header>
 
   <main class="container">
-    <h1>Order Search</h1>
-    <p class="subtitle">Find orders by customer, status, restaurant, and date. Leave a field empty to ignore it.</p>
+    <div class="page-head">
+      <div>
+        <h1>Orders</h1>
+        <p class="subtitle">Find orders by customer, status, restaurant, and date. Leave a field empty to ignore it.</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="new-order-btn">+ Place order</button>
+    </div>
+
+    <!-- Place order form (hidden until "+ Place order" is clicked) -->
+    <form id="order-form" class="card form-card" novalidate hidden>
+      <h2>Place order</h2>
+      <p class="hint">Fields marked <span class="req">*</span> are required. An order contains items from one restaurant.</p>
+      <div id="order-form-message" class="message" role="alert"></div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="order-customer">Customer <span class="req">*</span></label>
+          <select id="order-customer" name="customerId" required>
+            <option value="">Select a customer…</option>
+          </select>
+          <span class="field-error" data-error-for="customerId"></span>
+        </div>
+
+        <div class="field">
+          <label for="order-restaurant">Restaurant <span class="req">*</span></label>
+          <select id="order-restaurant" name="restaurantId" required>
+            <option value="">Select a restaurant…</option>
+          </select>
+          <span class="field-error" data-error-for="restaurantId"></span>
+        </div>
+
+        <div class="field full">
+          <label for="order-address">Delivery address <span class="req">*</span></label>
+          <input id="order-address" name="deliveryAddress" type="text" maxlength="200"
+                 placeholder="Filled from the customer's address; you can change it" required>
+          <span class="field-error" data-error-for="deliveryAddress"></span>
+        </div>
+
+        <fieldset class="field full">
+          <legend>Menu items <span class="req">*</span> <span class="hint">(set a quantity for each item you want)</span></legend>
+          <div id="items" class="picker">
+            <p class="picker-empty">Choose a restaurant to see its available menu items.</p>
+          </div>
+          <span class="field-error" data-error-for="items"></span>
+          <p id="order-estimate" class="order-estimate"></p>
+        </fieldset>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="place-btn">Place order</button>
+        <button type="button" class="btn btn-secondary" id="order-cancel-btn">Cancel</button>
+      </div>
+    </form>
 
     <div id="customer-note" class="message info" hidden></div>
 

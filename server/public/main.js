@@ -32,7 +32,8 @@ async function api(url, options = {}) {
 
 /**
  * Show per-field error messages under form inputs and highlight them.
- * Expects inputs with id="<field>" and a <span class="field-error" id="err-<field>">.
+ * Finds the input by name="<field>" (or id) inside the form, and the message
+ * <span class="field-error"> by data-error-for="<field>" (or id="err-<field>").
  * Pass {} to clear all errors in the form.
  */
 function showFieldErrors(formElement, errors) {
@@ -41,8 +42,9 @@ function showFieldErrors(formElement, errors) {
 
   let first = null;
   Object.entries(errors || {}).forEach(([field, text]) => {
-    const input = formElement.querySelector(`#${field}`);
-    const span = formElement.querySelector(`#err-${field}`);
+    const input = formElement.querySelector(`[name="${field}"]`) || formElement.querySelector(`#${field}`);
+    const span = formElement.querySelector(`[data-error-for="${field}"]`)
+      || formElement.querySelector(`#err-${field}`);
     if (input) {
       input.classList.add('invalid');
       input.setAttribute('aria-invalid', 'true');
