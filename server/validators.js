@@ -265,11 +265,18 @@ function validateOrder(body) {
   } else if (items.length > MAX_ORDER_LINES) {
     errors.items = `An order can have at most ${MAX_ORDER_LINES} different items.`;
   } else {
+    // Accept only real whole numbers (5) or digit strings ("5").
+    // Plain Number() would also accept true -> 1, "" -> 0, "1e1" -> 10.
+    const wholeNumber = (v) => {
+      if (typeof v === 'number') return Number.isInteger(v) ? v : NaN;
+      if (typeof v === 'string' && /^\d+$/.test(v.trim())) return Number(v.trim());
+      return NaN;
+    };
     const seen = new Set();
     data.items = [];
     for (const line of items) {
-      const itemId = Number(line && line.itemId);
-      const quantity = Number(line && line.quantity);
+      const itemId = wholeNumber(line && line.itemId);
+      const quantity = wholeNumber(line && line.quantity);
       if (!Number.isInteger(itemId) || itemId < 1) {
         errors.items = 'Each item must have a valid item ID.';
         break;

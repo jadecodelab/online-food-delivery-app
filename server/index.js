@@ -46,6 +46,11 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: `API route not found: ${req.method} ${req.originalUrl}` });
 });
 
+// Unknown page -> friendly 404 page with navigation
+app.use((req, res) => {
+  res.status(404).sendFile(path.join(__dirname, 'public', '404.html'));
+});
+
 // ---------- Error handler (must be last) ----------
 // Any error thrown in a route ends up here, so the server never crashes
 // and the browser always receives a JSON message.
@@ -64,6 +69,22 @@ app.use((err, req, res, next) => {
   // Request body is not valid JSON
   if (err.type === 'entity.parse.failed') {
     return res.status(400).json({ error: 'The request data is not valid JSON.' });
+  }
+
+  // Request body larger than the limit (100 KB by default)
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'The request is too large.' });
+  }
+
+  // Other request-format problems reported by Express (unsupported encoding, etc.)
+  if (err.expose && err.status >= 400 && err.status < 500) {
+    return res.status(err.status).json({ error: err.message });
+  }
+
+  // MySQL is not reachable (service stopped, connection lost) -> 503
+  if (['ECONNREFUSED', 'PROTOCOL_CONNECTION_LOST', 'ETIMEDOUT', 'ER_CON_COUNT_ERROR'].includes(err.code)) {
+    console.error(`[database unavailable] ${req.method} ${req.originalUrl}: ${err.code}`);
+    return res.status(503).json({ error: 'The database is not available right now. Please try again in a moment.' });
   }
 
   // MySQL constraint violation (duplicate, foreign key, CHECK, ...) -> 4xx
