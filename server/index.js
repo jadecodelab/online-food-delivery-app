@@ -118,6 +118,12 @@ async function start() {
 
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
+    // Addresses other devices on the same Wi-Fi (e.g. a phone) can use
+    const lan = Object.values(require('os').networkInterfaces())
+      .flat()
+      .filter((net) => net && net.family === 'IPv4' && !net.internal)
+      .map((net) => `http://${net.address}:${PORT}`);
+    if (lan.length) console.log(`On your phone (same Wi-Fi): ${lan.join('  or  ')}`);
   });
 }
 

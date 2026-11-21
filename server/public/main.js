@@ -110,4 +110,40 @@ function markActiveNav() {
   });
 }
 
-document.addEventListener('DOMContentLoaded', markActiveNav);
+/**
+ * Phones: add a ☰ button that shows/hides the navigation links.
+ * Added by JavaScript so every page gets it without repeating HTML;
+ * if JavaScript fails, the links simply stay visible.
+ */
+function setupMobileNav() {
+  const header = document.querySelector('.header-inner');
+  const nav = header && header.querySelector('.nav');
+  if (!nav) return;
+
+  nav.id = nav.id || 'main-nav';
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'nav-toggle';
+  button.setAttribute('aria-controls', nav.id);
+  button.setAttribute('aria-expanded', 'false');
+  button.setAttribute('aria-label', 'Open menu');
+  button.innerHTML = '<span aria-hidden="true">☰</span>';
+  header.insertBefore(button, nav);
+  header.classList.add('has-toggle');
+
+  const setOpen = (open) => {
+    header.classList.toggle('nav-open', open);
+    button.setAttribute('aria-expanded', String(open));
+    button.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    button.firstElementChild.textContent = open ? '✕' : '☰';
+  };
+  button.addEventListener('click', () => setOpen(!header.classList.contains('nav-open')));
+  // Close with Escape, or when a link is chosen
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+  nav.addEventListener('click', (e) => { if (e.target.closest('a')) setOpen(false); });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  markActiveNav();
+  setupMobileNav();
+});
