@@ -5,7 +5,7 @@ search menu items, add and edit customers, place orders, update order status,
 edit menu items, and view sales reports — all through the browser, backed by a
 MySQL database.
 
-**Demo video:** _add link here_ (≤ 7 minutes)
+**Demo video:** [Watch the demo](https://1drv.ms/v/c/1fe59d007c8bd62d/IQCZ9LqPsH-JR7bA3pIITqppAdzFS0GpnBMYBgfIdSmgIag?e=tnyubO)
 
 ---
 
